@@ -1,62 +1,55 @@
 package com.orbit.core.ai
 
 import com.orbit.core.ai.parser.NaturalLanguageDateParser
+import com.orbit.core.domain.model.ExtractedTaskDraft
 import com.orbit.core.domain.model.Priority
-import com.orbit.core.domain.model.Task
+import com.orbit.core.domain.model.TaskExtractor
 import java.time.LocalDate
-import java.util.UUID
-
-data class ExtractedTaskDraft(
-    val title: String,
-    val notes: String = "",
-    val dueDateEpochDay: Long? = null,
-    val dueTimeMinuteOfDay: Int? = null,
-    val priority: Priority = Priority.MEDIUM,
-    val originalUserInput: String
-) {
-    fun toTask(): Task {
-        val now = System.currentTimeMillis()
-        return Task(
-            id = UUID.randomUUID().toString(),
-            title = title,
-            notes = notes,
-            dueDateEpochDay = dueDateEpochDay,
-            dueTimeMinuteOfDay = dueTimeMinuteOfDay,
-            priority = priority,
-            isCompleted = false,
-            createdAtEpochMs = now,
-            updatedAtEpochMs = now
-        )
-    }
-}
-
-interface TaskExtractor {
-    suspend fun extract(rawInput: String): ExtractedTaskDraft
-}
 
 class OfflineDeterministicTaskExtractor(
     private val dateSupplier: () -> LocalDate = { LocalDate.now() }
 ) : TaskExtractor {
 
-    override suspend fun extract(rawInput: String): ExtractedTaskDraft {
-        val parsed = NaturalLanguageDateParser.parse(rawInput, dateSupplier())
-        val priority = when {
-            rawInput.contains("!urgent", ignoreCase = true) || rawInput.contains("urgent", ignoreCase = true) -> Priority.URGENT
-            rawInput.contains("!high", ignoreCase = true) -> Priority.HIGH
-            rawInput.contains("!low", ignoreCase = true) -> Priority.LOW
-            else -> Priority.MEDIUM
-        }
-        val cleanTitle = parsed.cleanedTitle
-            .replace("(?i)!urgent|!high|!low".toRegex(), "")
-            .trim()
+    private val URGENT_PATTERN = "(?i)(?:!urgent|\\burgent\\b)".toRegex()
+    private val HIGH_PATTERN = "(?i)(?:!high|\\bhigh priority\\b)".toRegex()
+    private val LOW_PATTERN = "(?i)(?:!low|\\blow priority\\b)".toRegex()
+    private val MEDIUM_PATTERN = "(?i)(?:!medium|!med|\\bmedium priority\\b)".toRegex()
 
-        return ExtractedTaskDraft(
-            title = if (cleanTitle.isNotBlank()) cleanTitle else rawInput.trim(),
-            notes = "",
-            dueDateEpochDay = parsed.epochDay,
-            dueTimeMinuteOfDay = parsed.minuteOfDay,
-            priority = priority,
-            originalUserInput = rawInput
-        )
+    override suspend fun extract(rawInput: String): ExtractedTaskDraft {
+        return try {
+            val parsed = NaturalLanguageDateParser.parse(rawInput, dateSupplier())
+            val priority = when {
+                URGENT_PATTERN.containsMatchIn(rawInput) -> Priority.URGENT
+                HIGH_PATTERN.containsMatchIn(rawInput) -> Priority.HIGH
+                LOW_PATTERN.containsMatchIn(rawInput) -> Priority.LOW
+                else -> Priority.MEDIUM
+            }
+            val cleanTitle = parsed.cleanedTitle
+                .replace(URGENT_PATTERN, "")
+                .replace(HIGH_PATTERN, "")
+                .replace(LOW_PATTERN, "")
+                .replace(MEDIUM_PATTERN, "")
+                .replace("\\s+".toRegex(), " ")
+                .trim()
+
+            ExtractedTaskDraft(
+                title = if (cleanTitle.isNotBlank()) cleanTitle else rawInput.trim(),
+                notes = "",
+                dueDateEpochDay = parsed.epochDay,
+                dueTimeMinuteOfDay = parsed.minuteOfDay,
+                priority = priority,
+                originalUserInput = rawInput
+            )
+        } catch (_: Exception) {
+            // If AI is unavailable, malformed, or errors, preserve user text and keep task flow functional
+            ExtractedTaskDraft(
+                title = rawInput.trim(),
+                notes = "",
+                dueDateEpochDay = null,
+                dueTimeMinuteOfDay = null,
+                priority = Priority.MEDIUM,
+                originalUserInput = rawInput
+            )
+        }
     }
 }

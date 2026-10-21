@@ -38,6 +38,33 @@
             </intent-filter>
         </activity>
 
+        <!-- Disable default WorkManager initializer for Hilt custom Configuration.Provider -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <!-- Floating Counter Overlay Service -->
+        <service
+            android:name="com.orbit.feature.attention.service.ReelCounterOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating interactive counter overlay for user attention and digital wellbeing tracking" />
+        </service>
+
+        <!-- Task Reminder BroadcastReceiver -->
+        <receiver
+            android:name="com.orbit.core.data.reminder.TaskReminderReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>

@@ -148,6 +148,12 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun updateDarkTheme(theme: String) {
+        viewModelScope.launch {
+            updatePreferencesUseCase.updateDarkTheme(theme)
+        }
+    }
+
     fun clearStatus() {
         _uiState.update { it.copy(statusMessage = null, errorMessage = null) }
     }

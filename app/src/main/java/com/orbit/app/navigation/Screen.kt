@@ -1,8 +1,10 @@
 package com.orbit.app.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
@@ -18,6 +20,9 @@ sealed class Screen(
     data object VideoInbox : Screen("video_inbox", "Videos", Icons.Default.PlayArrow)
     data object Attention : Screen("attention", "Attention", Icons.Default.Visibility)
     data object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    data object Notes : Screen("notes", "Notes", Icons.Default.Description)
+    data object AiAssistant : Screen("ai_assistant", "AI Assistant", Icons.Default.AutoAwesome)
+    data object Onboarding : Screen("onboarding", "Welcome", Icons.Default.CheckCircle)
 
     companion object {
         val bottomNavItems = listOf(Today, Agenda, VideoInbox, Attention, Settings)

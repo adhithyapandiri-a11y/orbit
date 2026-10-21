@@ -29,6 +29,30 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.orbit.core.ui.theme.LocalOrbitSpacing
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import com.orbit.core.domain.model.Priority
+import com.orbit.core.domain.model.Task
+import com.orbit.core.ui.theme.OrbitBackground
+import com.orbit.core.ui.theme.OrbitCardBorder
+import com.orbit.core.ui.theme.OrbitCardDark
+import com.orbit.core.ui.theme.OrbitCardElevated
+import com.orbit.core.ui.theme.OrbitOrange
+import com.orbit.core.ui.theme.OrbitTextPrimary
+import com.orbit.core.ui.theme.OrbitTextSecondary
+
 @Composable
 fun OrbitCard(
     modifier: Modifier = Modifier,
@@ -36,15 +60,17 @@ fun OrbitCard(
     content: @Composable () -> Unit
 ) {
     val shape = RoundedCornerShape(16.dp)
+    val border = BorderStroke(1.dp, OrbitCardBorder)
     if (onClick != null) {
         Card(
             onClick = onClick,
             modifier = modifier,
             shape = shape,
+            border = border,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             content()
         }
@@ -52,10 +78,11 @@ fun OrbitCard(
         Card(
             modifier = modifier,
             shape = shape,
+            border = border,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             content()
         }
@@ -231,5 +258,328 @@ fun OrbitLoadingIndicator(
         CircularProgressIndicator(
             color = MaterialTheme.colorScheme.primary
         )
+    }
+}
+
+@Composable
+fun OrbitStatTile(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    onClick: (() -> Unit)? = null
+) {
+    OrbitCard(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = OrbitTextPrimary
+                )
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = OrbitOrange,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = OrbitTextSecondary
+            )
+        }
+    }
+}
+
+@Composable
+fun OrbitFilterChip(
+    selected: Boolean,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null
+) {
+    val backgroundColor = if (selected) OrbitOrange else OrbitCardDark
+    val contentColor = if (selected) OrbitTextPrimary else OrbitTextSecondary
+    val border = if (selected) null else BorderStroke(1.dp, OrbitCardBorder)
+
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        color = backgroundColor,
+        border = border
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = contentColor,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.size(6.dp))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                color = contentColor
+            )
+        }
+    }
+}
+
+@Composable
+fun OrbitTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    singleLine: Boolean = true
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = OrbitCardDark,
+        border = BorderStroke(1.dp, OrbitCardBorder)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (leadingIcon != null) {
+                Icon(
+                    imageVector = leadingIcon,
+                    contentDescription = null,
+                    tint = OrbitTextSecondary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = OrbitTextSecondary
+                    )
+                }
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = singleLine,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        color = OrbitTextPrimary
+                    ),
+                    cursorBrush = SolidColor(OrbitOrange),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            if (trailingIcon != null) {
+                Spacer(modifier = Modifier.size(8.dp))
+                trailingIcon()
+            }
+        }
+    }
+}
+
+@Composable
+fun OrbitTaskRow(
+    task: Task,
+    onToggleCompletion: () -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onDelete: (() -> Unit)? = null
+) {
+    OrbitCard(
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Circular checkbox
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(if (task.isCompleted) OrbitOrange else OrbitCardElevated)
+                    .clickable(onClick = onToggleCompletion),
+                contentAlignment = Alignment.Center
+            ) {
+                if (task.isCompleted) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Completed",
+                        tint = OrbitBackground,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.size(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = if (task.isCompleted) OrbitTextSecondary else OrbitTextPrimary,
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (task.notes.isNotBlank() || task.dueDateEpochDay != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (task.priority == Priority.HIGH || task.priority == Priority.URGENT) {
+                            Text(
+                                text = "● ${task.priority.name} ",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = OrbitOrange,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        if (task.notes.isNotBlank()) {
+                            Text(
+                                text = task.notes,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = OrbitTextSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun OrbitSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    actionText: String? = null,
+    onActionClick: (() -> Unit)? = null
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = OrbitTextPrimary
+        )
+        if (actionText != null && onActionClick != null) {
+            Text(
+                text = actionText,
+                style = MaterialTheme.typography.labelLarge,
+                color = OrbitOrange,
+                modifier = Modifier.clickable(onClick = onActionClick)
+            )
+        }
+    }
+}
+
+@Composable
+fun OrbitHeroCard(
+    title: String,
+    subtitle: String,
+    tag: String = "Next Task",
+    onActionClick: (() -> Unit)? = null,
+    actionIcon: ImageVector = Icons.Default.PlayArrow,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = OrbitCardElevated,
+        border = BorderStroke(1.dp, OrbitCardBorder)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = tag,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = OrbitOrange,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = OrbitTextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = OrbitTextSecondary
+                )
+            }
+            if (onActionClick != null) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(OrbitOrange)
+                        .clickable(onClick = onActionClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = actionIcon,
+                        contentDescription = "Action",
+                        tint = OrbitBackground,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+        }
     }
 }

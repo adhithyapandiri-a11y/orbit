@@ -27,7 +27,7 @@ interface ReelCounterDao {
     @Query("SELECT * FROM reel_counter_sessions WHERE status != 'STOPPED'")
     suspend fun getUnfinishedSessionsDirect(): List<ReelCounterSessionEntity>
 
-    @Query("SELECT * FROM reel_counter_sessions WHERE local_date = :localDate")
+    @Query("SELECT * FROM reel_counter_sessions WHERE local_date = :localDate ORDER BY started_at_epoch_ms ASC")
     suspend fun getSessionsForDateDirect(localDate: String): List<ReelCounterSessionEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

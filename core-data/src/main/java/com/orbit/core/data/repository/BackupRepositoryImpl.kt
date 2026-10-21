@@ -96,7 +96,7 @@ class BackupRepositoryImpl(
             return ValidationResult.Invalid("Invalid backup format or malformed JSON")
         }
 
-        if (parsedBackup.schemaVersion != 1) {
+        if (parsedBackup.schemaVersion !in 1..2) {
             return ValidationResult.Invalid("Unsupported schema version: ${parsedBackup.schemaVersion}")
         }
 
@@ -115,6 +115,37 @@ class BackupRepositoryImpl(
         for (video in parsedBackup.videoItems) {
             if (!InputSanitizer.isValidUrl(video.url)) {
                 return ValidationResult.Invalid("Backup contains unsafe or invalid video URL")
+            }
+        }
+
+        // Validate tasks integrity
+        for (task in parsedBackup.tasks) {
+            if (task.id.isBlank() || task.title.isBlank()) {
+                return ValidationResult.Invalid("Backup contains task with empty ID or title")
+            }
+        }
+
+        // Validate counter events: foreign key session reference & monotonic unique sequence numbers
+        val sessionIds = parsedBackup.reelSessions.map { it.id }.toSet()
+        val sessionEventSeqs = mutableMapOf<String, MutableSet<Long>>()
+        for (event in parsedBackup.counterEvents) {
+            if (event.sessionId !in sessionIds) {
+                return ValidationResult.Invalid("Backup contains counter event referencing non-existent session ID: ${event.sessionId}")
+            }
+            if (event.sequenceNumber <= 0L) {
+                return ValidationResult.Invalid("Counter event sequence number must be positive: ${event.sequenceNumber}")
+            }
+            val seqs = sessionEventSeqs.getOrPut(event.sessionId) { mutableSetOf() }
+            if (!seqs.add(event.sequenceNumber)) {
+                return ValidationResult.Invalid("Duplicate sequence number ${event.sequenceNumber} in session ${event.sessionId}")
+            }
+        }
+
+        // Validate meeting notes: foreign key calendar event reference
+        val calendarEventIds = parsedBackup.calendarEvents.map { it.id }.toSet()
+        for (note in parsedBackup.meetingNotes) {
+            if (note.eventSnapshotId !in calendarEventIds) {
+                return ValidationResult.Invalid("Backup contains meeting note referencing non-existent event snapshot: ${note.eventSnapshotId}")
             }
         }
 
@@ -158,6 +189,12 @@ class BackupRepositoryImpl(
                 }
                 if (backup.dailyReelStatistics.isNotEmpty()) {
                     database.reelCounterDao().upsertDailyStatistics(backup.dailyReelStatistics.map { DailyReelStatisticEntity.fromDomain(it) })
+                }
+
+                // Refresh daily statistics from append-only event log as source of truth
+                val datesToRefresh = backup.reelSessions.map { it.localDate }.distinct()
+                for (date in datesToRefresh) {
+                    reelCounterRepository.refreshDailyRollup(date)
                 }
             }
 

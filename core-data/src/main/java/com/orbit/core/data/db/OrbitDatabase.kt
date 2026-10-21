@@ -27,7 +27,7 @@ import com.orbit.core.data.db.entity.VideoItemEntity
         CounterEventEntity::class,
         DailyReelStatisticEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

@@ -16,5 +16,6 @@ data class UserPreferences(
     val overlayPreference: OverlayPreference = OverlayPreference(),
     val darkThemeConfig: String = "SYSTEM",
     val crashReportingOptIn: Boolean = false,
-    val analyticsOptIn: Boolean = false
+    val analyticsOptIn: Boolean = false,
+    val hasCompletedOnboarding: Boolean = false
 )

@@ -1,5 +1,9 @@
 package com.orbit.app.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -7,10 +11,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -25,6 +35,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,12 +49,35 @@ import com.orbit.core.ui.component.OrbitLoadingIndicator
 import com.orbit.core.ui.component.OrbitOutlinedButton
 import com.orbit.core.ui.component.OrbitTopAppBar
 import com.orbit.core.ui.theme.LocalOrbitSpacing
+import com.orbit.core.ui.util.isHiltAvailable
 
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    viewModel: SettingsViewModel = hiltViewModel()
+    onNavigateToOnboarding: () -> Unit = {},
+    viewModel: SettingsViewModel? = null
 ) {
+    val context = LocalContext.current
+    val effectiveViewModel: SettingsViewModel? = viewModel ?: if (isHiltAvailable(context)) {
+        hiltViewModel<SettingsViewModel>()
+    } else {
+        null
+    }
+
+    if (effectiveViewModel == null) {
+        Scaffold(
+            topBar = { OrbitTopAppBar(title = "Settings & Privacy") },
+            modifier = modifier
+        ) { innerPadding ->
+            Text(
+                text = "Settings",
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
+        return
+    }
+
+    val viewModel = effectiveViewModel
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val spacing = LocalOrbitSpacing.current
 
@@ -86,6 +122,79 @@ fun SettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(spacing.small))
             }
+
+            // User Profile Header (Screen 13 design)
+            OrbitCard(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(spacing.medium),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(54.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(com.orbit.core.ui.theme.OrbitCardElevated)
+                            .border(1.dp, com.orbit.core.ui.theme.OrbitCardBorder, androidx.compose.foundation.shape.CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        androidx.compose.material3.Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Person,
+                            contentDescription = "Profile Avatar",
+                            tint = com.orbit.core.ui.theme.OrbitOrange,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(spacing.medium))
+                    Column {
+                        Text(
+                            text = "Adithya",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            color = com.orbit.core.ui.theme.OrbitTextPrimary
+                        )
+                        Text(
+                            text = "Personal OS Workspace · On-Device",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = com.orbit.core.ui.theme.OrbitTextSecondary
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(spacing.medium))
+
+            // Appearance Theme Variant Section (Screen 19 design)
+            Text(
+                text = "Appearance",
+                style = MaterialTheme.typography.titleLarge
+            )
+            Spacer(modifier = Modifier.height(spacing.small))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val currentTheme = uiState.preferences.darkThemeConfig
+                com.orbit.core.ui.component.OrbitFilterChip(
+                    selected = currentTheme == "DARK",
+                    text = "Dark (Default)",
+                    onClick = { viewModel.updateDarkTheme("DARK") }
+                )
+                com.orbit.core.ui.component.OrbitFilterChip(
+                    selected = currentTheme == "LIGHT",
+                    text = "Light",
+                    onClick = { viewModel.updateDarkTheme("LIGHT") }
+                )
+                com.orbit.core.ui.component.OrbitFilterChip(
+                    selected = currentTheme == "SYSTEM",
+                    text = "System",
+                    onClick = { viewModel.updateDarkTheme("SYSTEM") }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(spacing.medium))
 
             // Privacy Manifesto Card
             OrbitCard(modifier = Modifier.fillMaxWidth()) {
@@ -204,6 +313,30 @@ fun SettingsScreen(
                         onClick = { showDeleteConfirmDialog = true },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !uiState.isBusy
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(spacing.medium))
+
+            // App Introduction card
+            OrbitCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(spacing.medium)) {
+                    Text(
+                        text = "App Introduction & Tour",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(spacing.extraSmall))
+                    Text(
+                        text = "Review the four core pillars, privacy architecture, and optional permissions.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(spacing.medium))
+                    OrbitOutlinedButton(
+                        text = "Replay Onboarding Tour",
+                        onClick = onNavigateToOnboarding,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }

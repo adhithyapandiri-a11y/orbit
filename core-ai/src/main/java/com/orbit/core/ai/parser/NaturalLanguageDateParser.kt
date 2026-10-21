@@ -26,11 +26,36 @@ object NaturalLanguageDateParser {
         "\\bin\\s+(\\d+)\\s+days?\\b",
         Pattern.CASE_INSENSITIVE
     )
+    private val IN_WEEKS_PATTERN = Pattern.compile(
+        "\\bin\\s+(\\d+)\\s+weeks?\\b",
+        Pattern.CASE_INSENSITIVE
+    )
+
+    private val WEEKDAY_MAP: Map<String, DayOfWeek> = mapOf(
+        "monday" to DayOfWeek.MONDAY,
+        "mon" to DayOfWeek.MONDAY,
+        "tuesday" to DayOfWeek.TUESDAY,
+        "tue" to DayOfWeek.TUESDAY,
+        "tues" to DayOfWeek.TUESDAY,
+        "wednesday" to DayOfWeek.WEDNESDAY,
+        "wed" to DayOfWeek.WEDNESDAY,
+        "thursday" to DayOfWeek.THURSDAY,
+        "thu" to DayOfWeek.THURSDAY,
+        "thur" to DayOfWeek.THURSDAY,
+        "thurs" to DayOfWeek.THURSDAY,
+        "friday" to DayOfWeek.FRIDAY,
+        "fri" to DayOfWeek.FRIDAY,
+        "saturday" to DayOfWeek.SATURDAY,
+        "sat" to DayOfWeek.SATURDAY,
+        "sunday" to DayOfWeek.SUNDAY,
+        "sun" to DayOfWeek.SUNDAY
+    )
 
     fun parse(input: String, referenceDate: LocalDate = LocalDate.now()): ParsedDateTime {
         var text = input
         var date: LocalDate? = null
         var time: LocalTime? = null
+        var isTonight = false
 
         // 1. Detect "in X days"
         val inDaysMatcher = IN_DAYS_PATTERN.matcher(text)
@@ -40,7 +65,17 @@ object NaturalLanguageDateParser {
             text = inDaysMatcher.replaceFirst("").trim()
         }
 
-        // 2. Detect "today", "tomorrow", "day after tomorrow"
+        // 2. Detect "in X weeks"
+        if (date == null) {
+            val inWeeksMatcher = IN_WEEKS_PATTERN.matcher(text)
+            if (inWeeksMatcher.find()) {
+                val weeks = inWeeksMatcher.group(1)?.toLongOrNull() ?: 0L
+                date = referenceDate.plusWeeks(weeks)
+                text = inWeeksMatcher.replaceFirst("").trim()
+            }
+        }
+
+        // 3. Detect "today", "tonight", "tomorrow", "day after tomorrow"
         if (date == null) {
             val lower = text.lowercase(Locale.ROOT)
             when {
@@ -52,6 +87,11 @@ object NaturalLanguageDateParser {
                     date = referenceDate.plusDays(1)
                     text = text.replace("(?i)\\btomorrow\\b".toRegex(), "").trim()
                 }
+                lower.contains("tonight") -> {
+                    date = referenceDate
+                    isTonight = true
+                    text = text.replace("(?i)\\btonight\\b".toRegex(), "").trim()
+                }
                 lower.contains("today") -> {
                     date = referenceDate
                     text = text.replace("(?i)\\btoday\\b".toRegex(), "").trim()
@@ -59,24 +99,28 @@ object NaturalLanguageDateParser {
             }
         }
 
-        // 3. Detect "next <weekday>" or "<weekday>"
+        // 4. Detect "(on/this/next) <weekday>"
         if (date == null) {
-            for (dayOfWeek in DayOfWeek.entries) {
-                val dayName = dayOfWeek.name.lowercase(Locale.ROOT)
-                val patternNext = "(?i)\\bnext\\s+$dayName\\b".toRegex()
-                if (patternNext.containsMatchIn(text)) {
+            for ((key, targetDayOfWeek) in WEEKDAY_MAP) {
+                val pattern = "(?i)\\b(?:(next|this|on)\\s+)?$key\\b".toRegex()
+                val match = pattern.find(text)
+                if (match != null) {
+                    val modifier = match.groups[1]?.value?.lowercase(Locale.ROOT)
                     var target = referenceDate.plusDays(1)
-                    while (target.dayOfWeek != dayOfWeek) {
+                    while (target.dayOfWeek != targetDayOfWeek) {
                         target = target.plusDays(1)
                     }
+                    if (modifier == "next" && targetDayOfWeek == referenceDate.dayOfWeek) {
+                        target = referenceDate.plusWeeks(1)
+                    }
                     date = target
-                    text = text.replace(patternNext, "").trim()
+                    text = text.replaceRange(match.range, "").trim()
                     break
                 }
             }
         }
 
-        // 4. Detect 12h time (e.g., "at 5pm", "3:30 pm")
+        // 5. Detect 12h time (e.g., "at 5pm", "3:30 pm")
         val matcher12h = TIME_PATTERN_12H.matcher(text)
         if (matcher12h.find()) {
             val hourRaw = matcher12h.group(1)?.toIntOrNull() ?: 0
@@ -88,19 +132,23 @@ object NaturalLanguageDateParser {
             time = LocalTime.of(hour.coerceIn(0, 23), minuteRaw.coerceIn(0, 59))
             text = matcher12h.replaceFirst("").trim()
         } else {
-            // 5. Detect 24h time (e.g., "at 17:00", "09:30")
+            // 6. Detect 24h time (e.g., "at 17:00", "09:30")
             val matcher24h = TIME_PATTERN_24H.matcher(text)
             if (matcher24h.find()) {
                 val hour = matcher24h.group(1)?.toIntOrNull() ?: 0
                 val minute = matcher24h.group(2)?.toIntOrNull() ?: 0
                 time = LocalTime.of(hour.coerceIn(0, 23), minute.coerceIn(0, 59))
                 text = matcher24h.replaceFirst("").trim()
+            } else if (isTonight) {
+                // If "tonight" was parsed without explicit time, default to 20:00 (8pm)
+                time = LocalTime.of(20, 0)
             }
         }
 
-        // Clean up remaining filler words (e.g. trailing "at", extra spaces)
+        // Clean up remaining filler words (e.g. trailing "at", "on", extra spaces)
         val cleaned = text
-            .replace("(?i)\\bat\\s*$".toRegex(), "")
+            .replace("(?i)\\b(?:at|on)\\s*$".toRegex(), "")
+            .replace("^\\s*(?:at|on)\\b".toRegex(), "")
             .replace("\\s+".toRegex(), " ")
             .trim()
 

@@ -150,6 +150,10 @@ class SettingsViewModelTest {
             _prefs.update { it.copy(darkThemeConfig = theme) }
         }
 
+        override suspend fun setOnboardingCompleted(completed: Boolean) {
+            _prefs.update { it.copy(hasCompletedOnboarding = completed) }
+        }
+
         override suspend fun clearPreferences() {
             _prefs.value = UserPreferences()
         }

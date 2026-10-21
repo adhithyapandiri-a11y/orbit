@@ -21,6 +21,7 @@ data class Task(
     val isCompleted: Boolean = false,
     val completedAtEpochMs: Long? = null,
     val reminderAtEpochMs: Long? = null,
+    val isArchived: Boolean = false,
     val createdAtEpochMs: Long,
     val updatedAtEpochMs: Long
 )

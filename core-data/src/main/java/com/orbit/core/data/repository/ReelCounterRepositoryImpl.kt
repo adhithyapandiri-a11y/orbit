@@ -79,6 +79,10 @@ class ReelCounterRepositoryImpl(
             val session = reelCounterDao.getSessionByIdDirect(sessionId)
                 ?: throw IllegalArgumentException("Session not found: $sessionId")
 
+            if (session.status == SessionStatus.STOPPED) {
+                throw IllegalStateException("Cannot record event on a stopped session: $sessionId")
+            }
+
             val currentMaxSeq = reelCounterDao.getMaxSequenceNumber(sessionId)
             val newSeq = currentMaxSeq + 1L
 
@@ -201,19 +205,19 @@ class ReelCounterRepositoryImpl(
         var totalManualCount = 0
         var totalActiveDurationMs = 0L
 
+        // Process sessions ordered by started_at_epoch_ms ASC
         for (session in sessions) {
             val events = reelCounterDao.getEventsForSessionDirect(session.id)
-            var sessionCount = 0
             var sessionActiveMs = 0L
             var intervalStart: Long? = session.startedAtEpochMs
 
             for (event in events) {
                 when (event.action) {
                     CounterAction.INCREMENT -> {
-                        sessionCount++
+                        totalManualCount++
                     }
                     CounterAction.RESET -> {
-                        sessionCount = 0
+                        totalManualCount = 0
                     }
                     CounterAction.PAUSE -> {
                         if (intervalStart != null && event.timestampEpochMs >= intervalStart) {
@@ -222,20 +226,26 @@ class ReelCounterRepositoryImpl(
                         intervalStart = null
                     }
                     CounterAction.RESUME -> {
-                        intervalStart = event.timestampEpochMs
+                        if (intervalStart == null) {
+                            intervalStart = event.timestampEpochMs
+                        }
                     }
                 }
             }
 
-            // If session is still active, accumulate time up to stoppedAt or current time
+            // If session interval is still active, accumulate time up to stoppedAt or current time
             if (intervalStart != null) {
-                val end = session.stoppedAtEpochMs ?: session.updatedAtEpochMs
+                val end = session.stoppedAtEpochMs
+                    ?: if (session.status == SessionStatus.ACTIVE) {
+                        maxOf(session.updatedAtEpochMs, System.currentTimeMillis())
+                    } else {
+                        session.updatedAtEpochMs
+                    }
                 if (end >= intervalStart) {
                     sessionActiveMs += (end - intervalStart)
                 }
             }
 
-            totalManualCount += sessionCount
             totalActiveDurationMs += sessionActiveMs
         }
 

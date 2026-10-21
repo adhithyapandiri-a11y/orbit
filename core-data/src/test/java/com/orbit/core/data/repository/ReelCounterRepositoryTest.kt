@@ -99,4 +99,54 @@ class ReelCounterRepositoryTest {
         val stat = repository.getDailyStatistic("2026-10-20").first()
         assertThat(stat?.manualCount).isEqualTo(1)
     }
+
+    @Test
+    fun resetAcrossMultipleSessions_resetsDailyManualCount() = runTest {
+        // Session 1: 3 reels watched
+        val sess1 = repository.startSession("2026-10-20", 1000L)
+        repository.recordEvent(sess1.id, CounterAction.INCREMENT, 1010L)
+        repository.recordEvent(sess1.id, CounterAction.INCREMENT, 1020L)
+        repository.recordEvent(sess1.id, CounterAction.INCREMENT, 1030L)
+        repository.stopSession(sess1.id, 1040L)
+
+        val statAfterSess1 = repository.getDailyStatistic("2026-10-20").first()
+        assertThat(statAfterSess1?.manualCount).isEqualTo(3)
+
+        // Session 2: User resets today's count
+        val sess2 = repository.startSession("2026-10-20", 2000L)
+        repository.resetSession(sess2.id, 2010L)
+
+        val statAfterReset = repository.getDailyStatistic("2026-10-20").first()
+        assertThat(statAfterReset?.manualCount).isEqualTo(0)
+
+        // Session 2 continues: user watches 1 reel
+        repository.recordEvent(sess2.id, CounterAction.INCREMENT, 2020L)
+        val statFinal = repository.getDailyStatistic("2026-10-20").first()
+        assertThat(statFinal?.manualCount).isEqualTo(1)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun recordEventOnStoppedSession_throwsIllegalStateException() = runTest {
+        val session = repository.startSession("2026-10-20", 1000L)
+        repository.stopSession(session.id, 1050L)
+
+        // Attempting to record event on stopped session must fail
+        repository.recordEvent(session.id, CounterAction.INCREMENT, 1060L)
+    }
+
+    @Test
+    fun activeSessionDuration_accumulatesTimeAcrossPausesAndResumes() = runTest {
+        val session = repository.startSession("2026-10-20", 1000L)
+        // Interval 1: 1000 to 2000 = 1000ms active
+        repository.pauseSession(session.id, 2000L)
+        // Paused from 2000 to 3000 (1000ms paused)
+        repository.resumeSession(session.id, 3000L)
+        // Interval 2: 3000 to 5000 = 2000ms active
+        repository.stopSession(session.id, 5000L)
+
+        val stat = repository.getDailyStatistic("2026-10-20").first()
+        assertThat(stat).isNotNull()
+        // Total active: 1000ms + 2000ms = 3000ms
+        assertThat(stat?.activeDurationMillis).isEqualTo(3000L)
+    }
 }

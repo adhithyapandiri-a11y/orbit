@@ -38,6 +38,14 @@ class SecurityTests {
         assertThat(crypto.decryptString(enc2)).isEqualTo(text)
     }
 
+    @Test
+    fun cryptoManager_defaultConstructor_inJvm_encryptsAndDecryptsSuccessfully() {
+        val crypto = CryptoManager()
+        val text = "Private meeting note content"
+        val enc = crypto.encryptString(text)
+        assertThat(crypto.decryptString(enc)).isEqualTo(text)
+    }
+
     @Test(expected = Exception::class)
     fun cryptoManager_tamperedCiphertext_failsDecryption() {
         val crypto = createTestCryptoManager()

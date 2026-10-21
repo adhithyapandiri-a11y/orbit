@@ -7,6 +7,7 @@ import com.orbit.core.data.db.dao.MeetingNoteDao
 import com.orbit.core.data.db.dao.ReelCounterDao
 import com.orbit.core.data.db.dao.TaskDao
 import com.orbit.core.data.db.dao.VideoInboxDao
+import com.orbit.core.data.reminder.TaskReminderSchedulerImpl
 import com.orbit.core.data.repository.BackupRepositoryImpl
 import com.orbit.core.data.repository.CalendarRepositoryImpl
 import com.orbit.core.data.repository.MeetingNoteRepositoryImpl
@@ -14,18 +15,26 @@ import com.orbit.core.data.repository.PreferencesRepositoryImpl
 import com.orbit.core.data.repository.ReelCounterRepositoryImpl
 import com.orbit.core.data.repository.TaskRepositoryImpl
 import com.orbit.core.data.repository.VideoInboxRepositoryImpl
+import com.orbit.core.domain.model.TaskExtractor
 import com.orbit.core.domain.repository.BackupRepository
 import com.orbit.core.domain.repository.CalendarRepository
 import com.orbit.core.domain.repository.MeetingNoteRepository
 import com.orbit.core.domain.repository.PreferencesRepository
 import com.orbit.core.domain.repository.ReelCounterRepository
+import com.orbit.core.domain.repository.TaskReminderScheduler
 import com.orbit.core.domain.repository.TaskRepository
 import com.orbit.core.domain.repository.VideoInboxRepository
+import com.orbit.core.domain.usecase.CreateTaskUseCase
+import com.orbit.core.domain.usecase.DeleteTaskUseCase
 import com.orbit.core.domain.usecase.EraseAllDataUseCase
 import com.orbit.core.domain.usecase.ExportDataUseCase
+import com.orbit.core.domain.usecase.ExtractTaskWithReviewUseCase
 import com.orbit.core.domain.usecase.GetPreferencesUseCase
+import com.orbit.core.domain.usecase.GetTasksUseCase
 import com.orbit.core.domain.usecase.ImportDataUseCase
+import com.orbit.core.domain.usecase.ToggleTaskCompletionUseCase
 import com.orbit.core.domain.usecase.UpdatePreferencesUseCase
+import com.orbit.core.domain.usecase.UpdateTaskUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,6 +44,12 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object RepositoryModule {
+
+    @Provides
+    @Singleton
+    fun provideTaskReminderScheduler(
+        scheduler: TaskReminderSchedulerImpl
+    ): TaskReminderScheduler = scheduler
 
     @Provides
     @Singleton
@@ -107,4 +122,31 @@ object RepositoryModule {
 
     @Provides
     fun provideUpdatePreferencesUseCase(repo: PreferencesRepository): UpdatePreferencesUseCase = UpdatePreferencesUseCase(repo)
+
+    @Provides
+    fun provideGetTasksUseCase(repo: TaskRepository): GetTasksUseCase = GetTasksUseCase(repo)
+
+    @Provides
+    fun provideCreateTaskUseCase(
+        repo: TaskRepository,
+        scheduler: TaskReminderScheduler
+    ): CreateTaskUseCase = CreateTaskUseCase(repo, scheduler)
+
+    @Provides
+    fun provideUpdateTaskUseCase(
+        repo: TaskRepository,
+        scheduler: TaskReminderScheduler
+    ): UpdateTaskUseCase = UpdateTaskUseCase(repo, scheduler)
+
+    @Provides
+    fun provideToggleTaskCompletionUseCase(
+        repo: TaskRepository,
+        scheduler: TaskReminderScheduler
+    ): ToggleTaskCompletionUseCase = ToggleTaskCompletionUseCase(repo, scheduler)
+
+    @Provides
+    fun provideDeleteTaskUseCase(
+        repo: TaskRepository,
+        scheduler: TaskReminderScheduler
+    ): DeleteTaskUseCase = DeleteTaskUseCase(repo, scheduler)
 }

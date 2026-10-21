@@ -34,6 +34,7 @@ class OrbitPreferencesDataSource(
         val KEY_DARK_THEME = stringPreferencesKey("dark_theme_config")
         val KEY_CRASH_OPT_IN = booleanPreferencesKey("crash_reporting_opt_in")
         val KEY_ANALYTICS_OPT_IN = booleanPreferencesKey("analytics_opt_in")
+        val KEY_ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
     val userPreferences: Flow<UserPreferences> = dataStore.data
@@ -69,7 +70,8 @@ class OrbitPreferencesDataSource(
                 overlayPreference = overlayPreference,
                 darkThemeConfig = preferences[KEY_DARK_THEME] ?: "SYSTEM",
                 crashReportingOptIn = preferences[KEY_CRASH_OPT_IN] ?: false,
-                analyticsOptIn = preferences[KEY_ANALYTICS_OPT_IN] ?: false
+                analyticsOptIn = preferences[KEY_ANALYTICS_OPT_IN] ?: false,
+                hasCompletedOnboarding = preferences[KEY_ONBOARDING_COMPLETED] ?: false
             )
         }
 
@@ -115,6 +117,12 @@ class OrbitPreferencesDataSource(
     suspend fun updateDarkTheme(theme: String) {
         dataStore.edit { preferences ->
             preferences[KEY_DARK_THEME] = theme
+        }
+    }
+
+    suspend fun setOnboardingCompleted(completed: Boolean = true) {
+        dataStore.edit { preferences ->
+            preferences[KEY_ONBOARDING_COMPLETED] = completed
         }
     }
 

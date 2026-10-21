@@ -19,6 +19,10 @@ class MeetingNoteRepositoryImpl(
         return meetingNoteDao.getNoteById(id).map { it?.toDomain() }
     }
 
+    override fun getAllNotes(): Flow<List<MeetingNote>> {
+        return meetingNoteDao.getAllNotes().map { list -> list.map { it.toDomain() } }
+    }
+
     override suspend fun upsertNote(note: MeetingNote) {
         meetingNoteDao.upsertNote(MeetingNoteEntity.fromDomain(note))
     }

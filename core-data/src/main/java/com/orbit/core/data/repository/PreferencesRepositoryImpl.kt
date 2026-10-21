@@ -27,6 +27,10 @@ class PreferencesRepositoryImpl(
         preferencesDataSource.updateDarkTheme(theme)
     }
 
+    override suspend fun setOnboardingCompleted(completed: Boolean) {
+        preferencesDataSource.setOnboardingCompleted(completed)
+    }
+
     override suspend fun clearPreferences() {
         preferencesDataSource.clearAll()
     }

@@ -30,6 +30,8 @@ data class TaskEntity(
     val completedAtEpochMs: Long? = null,
     @ColumnInfo(name = "reminder_at_epoch_ms")
     val reminderAtEpochMs: Long? = null,
+    @ColumnInfo(name = "is_archived", defaultValue = "0")
+    val isArchived: Boolean = false,
     @ColumnInfo(name = "created_at_epoch_ms")
     val createdAtEpochMs: Long,
     @ColumnInfo(name = "updated_at_epoch_ms")
@@ -45,6 +47,7 @@ data class TaskEntity(
         isCompleted = isCompleted,
         completedAtEpochMs = completedAtEpochMs,
         reminderAtEpochMs = reminderAtEpochMs,
+        isArchived = isArchived,
         createdAtEpochMs = createdAtEpochMs,
         updatedAtEpochMs = updatedAtEpochMs
     )
@@ -60,6 +63,7 @@ data class TaskEntity(
             isCompleted = task.isCompleted,
             completedAtEpochMs = task.completedAtEpochMs,
             reminderAtEpochMs = task.reminderAtEpochMs,
+            isArchived = task.isArchived,
             createdAtEpochMs = task.createdAtEpochMs,
             updatedAtEpochMs = task.updatedAtEpochMs
         )

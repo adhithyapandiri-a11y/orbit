@@ -10,5 +10,6 @@ interface PreferencesRepository {
     suspend fun updateFeatureFlags(update: (FeatureFlags) -> FeatureFlags)
     suspend fun updateOverlayPreference(update: (OverlayPreference) -> OverlayPreference)
     suspend fun updateDarkTheme(theme: String)
+    suspend fun setOnboardingCompleted(completed: Boolean = true)
     suspend fun clearPreferences()
 }

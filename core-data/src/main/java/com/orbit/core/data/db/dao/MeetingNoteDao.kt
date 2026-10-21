@@ -25,6 +25,9 @@ interface MeetingNoteDao {
     @Query("DELETE FROM meeting_notes WHERE id = :id")
     suspend fun deleteNoteById(id: String)
 
+    @Query("SELECT * FROM meeting_notes ORDER BY updated_at_epoch_ms DESC")
+    fun getAllNotes(): Flow<List<MeetingNoteEntity>>
+
     @Query("SELECT * FROM meeting_notes")
     suspend fun getAllNotesDirect(): List<MeetingNoteEntity>
 
