@@ -60,6 +60,8 @@ public actor GroqClient {
         - "close_youtube": params: {}
         - "close_app": params: {"name": "<app name>"}
         - "close_window": params: {}
+        - "get_battery_status": params: {}
+        - "lock_screen": params: {}
         - "open_chrome": params: {"url": "<url>"}
         - "open_whatsapp": params: {"recipient": "<contact name>"}
         - "send_whatsapp": params: {"recipient": "<contact or phone>", "message": "<body text>", "confirm_first": false}
@@ -180,6 +182,10 @@ public actor GroqClient {
                     actions.append(.closeApp(name: name))
                 case "close_window":
                     actions.append(.closeActiveWindow)
+                case "get_battery_status":
+                    actions.append(.getBatteryStatus)
+                case "lock_screen":
+                    actions.append(.lockScreen)
                 case "open_chrome":
                     let url = params["url"] as? String ?? "https://google.com"
                     actions.append(.openChrome(url: url))

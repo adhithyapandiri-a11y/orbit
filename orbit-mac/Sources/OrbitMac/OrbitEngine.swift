@@ -254,6 +254,14 @@ public final class OrbitEngine {
             print("[Orbit] 🛑 Closing active window...")
             return try await automation.closeActiveWindow()
 
+        case .getBatteryStatus:
+            print("[Orbit] 🔋 Checking battery status...")
+            return await automation.getBatteryStatus()
+
+        case .lockScreen:
+            print("[Orbit] 🔒 Locking display...")
+            return await automation.lockScreen()
+
         case .launchApp(let name):
             print("[Orbit] 🚀 Launching \(name)")
             return try await automation.launchApp(name: name)

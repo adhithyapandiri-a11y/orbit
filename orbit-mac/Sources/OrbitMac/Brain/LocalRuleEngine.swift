@@ -284,6 +284,22 @@ public struct LocalRuleEngine {
             )
         }
 
+        // 8. Battery & Power Status
+        if lower.contains("battery") || lower.contains("power status") {
+            return PlannedTask(
+                speechResponse: nil,
+                actions: [.getBatteryStatus]
+            )
+        }
+
+        // 9. Lock Screen / Sleep Display
+        if lower.contains("lock screen") || lower.contains("lock mac") || lower.contains("lock the screen") || lower == "lock" {
+            return PlannedTask(
+                speechResponse: "Locking screen.",
+                actions: [.lockScreen]
+            )
+        }
+
         return nil
     }
 }

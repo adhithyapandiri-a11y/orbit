@@ -957,4 +957,40 @@ public final class AutomationBridge: Sendable {
         """
         return try await runAppleScript(script, timeoutSeconds: 3.0)
     }
+
+    // MARK: - Battery & Power Status
+    @discardableResult
+    public func getBatteryStatus() async -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+        process.arguments = ["-g", "batt"]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        try? process.run()
+        process.waitUntilExit()
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        let output = String(data: data, encoding: .utf8) ?? ""
+
+        let pattern = #"(\d+%);\s*([^;]+)"#
+        if let regex = try? NSRegularExpression(pattern: pattern),
+           let match = regex.firstMatch(in: output, range: NSRange(output.startIndex..., in: output)) {
+            if let pRange = Range(match.range(at: 1), in: output),
+               let sRange = Range(match.range(at: 2), in: output) {
+                let percent = String(output[pRange])
+                let state = String(output[sRange]).trimmingCharacters(in: .whitespacesAndNewlines)
+                return "Battery is at \(percent), \(state)."
+            }
+        }
+        return "Battery status is unavailable."
+    }
+
+    // MARK: - Lock Screen
+    @discardableResult
+    public func lockScreen() async -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/pmset")
+        process.arguments = ["displaysleepnow"]
+        try? process.run()
+        return "Locking screen."
+    }
 }

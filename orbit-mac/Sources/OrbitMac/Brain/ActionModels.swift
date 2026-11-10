@@ -17,6 +17,8 @@ public enum OrbitAction: Sendable {
     case closeYouTube
     case closeApp(name: String)
     case closeActiveWindow
+    case getBatteryStatus
+    case lockScreen
     case launchApp(name: String)
     case clickScreen(x: Double, y: Double, label: String)
     case typeText(text: String)
