@@ -66,6 +66,14 @@ Orbit features a bespoke OLED pitch-dark theme (`#0B0B0B`) with vivid warm sunse
 - **Integrity Validation**: SHA-256 checksums and foreign-key relation validation preventing corrupted or tampered imports.
 - **Permanent Data Erasure**: Complete, one-tap "Erase All Data" control.
 
+### 8. Orbit macOS Companion Daemon (`orbit-mac/`)
+- **Hands-Free Ambient Voice**: Runs 24/7 in the background with zero terminal windows via macOS `LaunchAgent`.
+- **Menu Bar Control (`🪐`)**: Top menu bar status indicator with fallback controls (Pause/Resume, Wake Now, Toggle Music, Live Logs, Quit).
+- **Strict 5-Step WhatsApp Automation**: Searches contacts, opens chat, and sends text messages—or records voice notes with automatic 2.5-second silence detection.
+- **Dynamic Spotify & YouTube Autoplay**: Searches and plays requested tracks on Spotify and YouTube without resuming old audio or getting stuck on search pages.
+- **Window Display Switching**: Smoothly moves active windows between Mac displays and external monitors.
+- **Zero Cost / Instant Offline Engine**: Deterministic local rule engine for instantaneous offline execution ($0 API cost), with automatic fallback to Groq Cloud LPU.
+
 ---
 
 ## 🏗️ Architecture & Tech Stack
@@ -74,7 +82,7 @@ Orbit is built on a clean, modular Android architecture:
 
 ```text
 Orbit/
-├── app/                  # Main application shell, Hilt DI container, Navigation host, Settings
+├── app/                  # Main Android shell, Hilt DI container, Navigation host, Settings
 ├── core-domain/          # Pure Kotlin domain entities, repository interfaces, use cases
 ├── core-data/            # Room database (v1 -> v2), DataStore, repository implementations, WorkManager
 ├── core-security/        # Android Keystore AES-256-GCM, SHA-256 checksums, input sanitizers
@@ -84,7 +92,8 @@ Orbit/
 ├── feature-today/        # Tasks cockpit and natural-language capture
 ├── feature-agenda/       # Combined calendar timeline and meeting notes
 ├── feature-video-inbox/  # Distraction-free video queue and share target
-└── feature-attention/    # Attention dashboard and floating WindowManager overlay
+├── feature-attention/    # Attention dashboard and floating WindowManager overlay
+└── orbit-mac/            # Native macOS Jarvis executive voice assistant & menu bar daemon
 ```
 
 - **Language**: Kotlin 1.9.22
