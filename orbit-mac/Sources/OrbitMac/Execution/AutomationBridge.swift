@@ -930,10 +930,16 @@ public final class AutomationBridge: Sendable {
     public func launchApp(name: String) async throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        process.arguments = ["-a", name]
+        let expanded = NSString(string: name).expandingTildeInPath
+        if expanded.hasPrefix("/") {
+            process.arguments = [expanded]
+        } else {
+            process.arguments = ["-a", name]
+        }
         try process.run()
         process.waitUntilExit()
-        return "Launched \(name)."
+        let cleanName = (expanded.hasPrefix("/") ? URL(fileURLWithPath: expanded).lastPathComponent : name)
+        return "Opened \(cleanName)."
     }
 
     // MARK: - Email Reader (Apple Mail)

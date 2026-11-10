@@ -10,7 +10,17 @@ public struct LocalRuleEngine {
         let trimmed = command.trimmingCharacters(in: .whitespacesAndNewlines)
         let lower = trimmed.lowercased()
 
-        // 0. Date & Time Queries (Instant Offline Answer with Real Local Time)
+        // 0. Date & Time Queries (Instant Offline Answer with Real Local Time & Date)
+        if lower.contains("what is today's date") || lower.contains("what's today's date") || lower.contains("what is the date") || lower.contains("what's the date") || lower.contains("today's date") || lower.contains("what day is it") || lower.contains("what day is today") || lower == "the date" || lower == "today's date" {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "EEEE, MMMM d, yyyy"
+            let dateStr = formatter.string(from: Date())
+            return PlannedTask(
+                speechResponse: "Today is \(dateStr).",
+                actions: []
+            )
+        }
+
         if lower.contains("what is the time") || lower.contains("what's the time") || lower.contains("what time") || lower == "the time" || lower.contains("tell me the time") || lower.contains("current time") || lower.contains("time now") {
             let formatter = DateFormatter()
             formatter.timeStyle = .short
@@ -233,6 +243,32 @@ public struct LocalRuleEngine {
             return PlannedTask(
                 speechResponse: "Opening Google Chrome.",
                 actions: [.openChrome(url: "https://google.com")]
+            )
+        }
+
+        // 4.5 System Folders
+        if lower.contains("downloads") && (lower.contains("open") || lower.contains("show")) {
+            return PlannedTask(
+                speechResponse: "Opening Downloads.",
+                actions: [.launchApp(name: "~/Downloads")]
+            )
+        }
+        if lower.contains("desktop") && (lower.contains("open") || lower.contains("show")) {
+            return PlannedTask(
+                speechResponse: "Opening Desktop.",
+                actions: [.launchApp(name: "~/Desktop")]
+            )
+        }
+        if lower.contains("documents") && (lower.contains("open") || lower.contains("show")) {
+            return PlannedTask(
+                speechResponse: "Opening Documents.",
+                actions: [.launchApp(name: "~/Documents")]
+            )
+        }
+        if lower.contains("applications") && (lower.contains("open") || lower.contains("show")) {
+            return PlannedTask(
+                speechResponse: "Opening Applications.",
+                actions: [.launchApp(name: "/Applications")]
             )
         }
 
